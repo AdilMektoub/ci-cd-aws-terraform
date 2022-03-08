@@ -28,6 +28,8 @@ def index():
     '''Route for home page'''
     return render_template('index.html')
 
+# shutdomw server
+
 
 @app.route("/post_login", methods=["get", "post"])
 def login():
