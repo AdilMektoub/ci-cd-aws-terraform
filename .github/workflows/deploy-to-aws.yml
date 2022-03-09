@@ -36,7 +36,7 @@ jobs:
       - name: Run Test
         run: |
           flake8 app.py
-          pytlint app.py
+          pylint app.py
           
   deploy:
     needs: [test]
