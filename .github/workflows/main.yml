@@ -55,7 +55,7 @@ jobs:
 
     cd:
        runs-on: ubuntu-latest
-       needs: [my_ci_pipeline]
+       needs: [ci]
        
        steps:
          - name: Configure my AWS Credentils
