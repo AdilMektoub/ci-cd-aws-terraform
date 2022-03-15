@@ -5,7 +5,6 @@ application = Flask(__name__)
 
 
 @application.route("/")
-
 def root():
     ''' Function to display index.html'''
     return render_template("index.html")
