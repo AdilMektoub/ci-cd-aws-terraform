@@ -1,5 +1,3 @@
-# This is a basic workflow to help you get started with Actions
-
 name: CICD from github to aws
 env:
    EB_PACKAGE_S3_BUCKET_NAME: "flask-app-files"
@@ -15,12 +13,12 @@ on:
   
   workflow_dispatch:
 jobs:
-    build:
+    ci:
        runs-on: ubuntu-latest
        steps:
          - name: check your repository
            uses: actions/checkout@v2
-            
+
          - name: Setup Python Environment
            uses: actions/setup-python@v3.0.0
            
@@ -37,6 +35,45 @@ jobs:
          - name: Print nice message TEST OK
            run : echo "TEST part finished successfully"
 
-         - name: Deploy
-           run: |
-             zip -j deploy.zip ./app/*
+         - name: Create ZIP for deployment package
+           run : zip -r ${{ env.DEPLOY_PACKAGE_NAME }} ./  -x  *.git* # exclude all files ".git"
+
+# We authenticate on AWS
+         - name: Configure my AWS Credentils
+           uses: aws-actions/configure-aws-credentials@v1
+           with:
+             aws-access-key-id    : ${{ secrets.MY_AWS_ACCESS_KEY }}
+             aws-secret-access-key: ${{ secrets.MY_AWS_SECRET_KEY }}
+             aws-region           : ${{ env.AWS_REGION_NAME }}
+
+# We copy on S3 bucket
+         - name: Copy our Deployment package to S3 bucket
+           run : aws s3 cp ${{ env.DEPLOY_PACKAGE_NAME }} s3://${{ env.EB_PACKAGE_S3_BUCKET_NAME}}/
+
+         - name: Print nice message on completion of CI Pipeline
+           run : echo "CI Pipeline part finished successfully"
+
+    cd:
+       runs-on: ubuntu-latest
+       needs: [my_ci_pipeline]
+       
+       steps:
+         - name: Configure my AWS Credentils
+           uses: aws-actions/configure-aws-credentials@v1
+           with:
+             aws-access-key-id    : ${{ secrets.MY_AWS_ACCESS_KEY }}
+             aws-secret-access-key: ${{ secrets.MY_AWS_SECRET_KEY }}
+             aws-region           : ${{ env.AWS_REGION_NAME }}
+         
+         - name: Create new ElasticBeanstalk Applicaiton Version
+           run : |
+            aws elasticbeanstalk create-application-version \
+            --application-name ${{ env.EB_APPLICATION_NAME }} \
+            --source-bundle S3Bucket="${{ env.EB_PACKAGE_S3_BUCKET_NAME }}",S3Key="${{ env.DEPLOY_PACKAGE_NAME }}" \
+            --version-label "Ver-${{ github.sha }}" \
+            --description "CommitSHA-${{ github.sha }}"
+         - name: Deploy our new Application Version
+           run : aws elasticbeanstalk update-environment --environment-name ${{ env.EB_ENVIRONMENT_NAME }} --version-label "Ver-${{ github.sha }}"
+           
+         - name: Print nice message on completion of CD Pipeline
+           run : echo "CD Pipeline part finished successfully"  
