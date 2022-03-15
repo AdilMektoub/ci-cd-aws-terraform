@@ -29,8 +29,8 @@ jobs:
 
          - name: Run Test
            run: |
-            flake8 app.py
-            pylint app.py
+            flake8 application.py
+            pylint application.py
          
          - name: Print nice message TEST OK
            run : echo "TEST part finished successfully"
